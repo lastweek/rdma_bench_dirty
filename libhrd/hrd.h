@@ -82,6 +82,8 @@ struct hrd_qp_attr {
 
   int lid;
   int qpn;
+
+  union ibv_gid remote_gid;
 };
 
 struct hrd_ctrl_blk {

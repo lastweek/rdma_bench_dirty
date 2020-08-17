@@ -1,5 +1,24 @@
 #include "hrd.h"
 
+#define SGID_INDEX 1
+
+union ibv_gid ib_get_gid(struct ibv_context *context, int port_index)
+{
+    union ibv_gid ret_gid;
+    int ret;
+    ret = ibv_query_gid(context, port_index, SGID_INDEX, &ret_gid);
+    if(ret) {
+        fprintf(stderr, "\t !!!!!!!!!!  get GID fail\n");
+        exit(0);
+    }   
+
+    fprintf(stderr, "GID: Interface id = %lld subnet prefix = %lld\n",
+        (long long) ret_gid.global.interface_id,
+        (long long) ret_gid.global.subnet_prefix);
+
+    return ret_gid;
+}
+
 /*
  * If @prealloc_conn_buf != NULL, @conn_buf_size is the size of the preallocated
  * buffer. If @prealloc_conn_buf == NULL, @conn_buf_size is the size of the
@@ -427,6 +446,10 @@ void hrd_create_conn_qps(struct hrd_ctrl_blk* cb) {
   }
 }
 
+#define LINK_MODE_IB 0
+#define LINK_MODE_ROCE 1
+int link_mode = LINK_MODE_ROCE;
+
 /* Connects @cb's queue pair index @n to remote QP @remote_qp_attr */
 void hrd_connect_qp(struct hrd_ctrl_blk* cb, int n,
                     struct hrd_qp_attr* remote_qp_attr) {
@@ -439,15 +462,26 @@ void hrd_connect_qp(struct hrd_ctrl_blk* cb, int n,
   struct ibv_qp_attr conn_attr;
   memset(&conn_attr, 0, sizeof(struct ibv_qp_attr));
   conn_attr.qp_state = IBV_QPS_RTR;
-  conn_attr.path_mtu = IBV_MTU_4096;
+  conn_attr.path_mtu = IBV_MTU_1024;
   conn_attr.dest_qp_num = remote_qp_attr->qpn;
   conn_attr.rq_psn = HRD_DEFAULT_PSN;
 
-  conn_attr.ah_attr.is_global = 0;
-  conn_attr.ah_attr.dlid = remote_qp_attr->lid;
+  //conn_attr.ah_attr.is_global = 0;
+  conn_attr.ah_attr.is_global = 1;
+  //conn_attr.ah_attr.dlid = remote_qp_attr->lid;
+  conn_attr.ah_attr.dlid = 0;
   conn_attr.ah_attr.sl = 0;
   conn_attr.ah_attr.src_path_bits = 0;
   conn_attr.ah_attr.port_num = cb->dev_port_id; /* Local port! */
+
+  
+    fprintf(stderr, "%s:%d GID: Interface id = %lld subnet prefix = %lld\n", __func__, __LINE__,
+        (long long) remote_qp_attr->remote_gid.global.interface_id,
+        (long long) remote_qp_attr->remote_gid.global.subnet_prefix);
+
+        conn_attr.ah_attr.grh.dgid = remote_qp_attr->remote_gid;
+        conn_attr.ah_attr.grh.sgid_index = SGID_INDEX;
+        conn_attr.ah_attr.grh.hop_limit = 255;
 
   int rtr_flags = IBV_QP_STATE | IBV_QP_AV | IBV_QP_PATH_MTU | IBV_QP_DEST_QPN |
                   IBV_QP_RQ_PSN;
@@ -487,6 +521,7 @@ void hrd_connect_qp(struct hrd_ctrl_blk* cb, int n,
 
 #if HRD_CONNECT_IB_ATOMICS == 1
   struct ibv_exp_qp_attr conn_attr;
+  asdas
   memset(&conn_attr, 0, sizeof(struct ibv_exp_qp_attr));
   conn_attr.qp_state = IBV_QPS_RTR;
   conn_attr.path_mtu = IBV_MTU_4096;
@@ -562,6 +597,8 @@ void hrd_publish_conn_qp(struct hrd_ctrl_blk* cb, int n, const char* qp_name) {
   qp_attr.rkey = cb->conn_buf_mr->rkey;
   qp_attr.lid = hrd_get_local_lid(cb->conn_qp[n]->context, cb->dev_port_id);
   qp_attr.qpn = cb->conn_qp[n]->qp_num;
+
+  qp_attr.remote_gid = ib_get_gid(cb->conn_qp[n]->context, 1);
 
   hrd_publish(qp_attr.name, &qp_attr, sizeof(struct hrd_qp_attr));
 }

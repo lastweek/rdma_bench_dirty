@@ -26,7 +26,7 @@ void* run_worker(void* arg) {
   mica_init(&kv, wrkr_lid, 0, HERD_NUM_BKTS, HERD_LOG_CAP);
   mica_populate_fixed_len(&kv, HERD_NUM_KEYS, HERD_VALUE_SIZE);
 
-  assert(num_server_ports < MAX_SERVER_PORTS); /* Avoid dynamic alloc */
+  //assert(num_server_ports < MAX_SERVER_PORTS); /* Avoid dynamic alloc */
   struct hrd_ctrl_blk* cb[MAX_SERVER_PORTS];
 
   for (i = 0; i < num_server_ports; i++) {
@@ -73,15 +73,28 @@ void* run_worker(void* arg) {
            wrkr_lid, i, NUM_CLIENTS, clt_qp[i]->lid);
 
     struct ibv_ah_attr ah_attr = {
-        .is_global = 0,
-        .dlid = clt_qp[i]->lid,
+#if 1
+	// RoCE
+        .is_global = 1,
+        .dlid = 0,
+#else
+	.is_global = 0,
+	.dlid = clt_qp[i]->lid,
+#endif
+
         .sl = 0,
         .src_path_bits = 0,
+
         /* port_num (> 1): device-local port for responses to this client */
-        .port_num = local_port_i + 1,
+        //.port_num = local_port_i + 1,
+        .port_num = 1,
     };
 
     ah[i] = ibv_create_ah(cb[cb_i]->pd, &ah_attr);
+    if (ah[i] == NULL) {
+    	printf("%s: ah is NULL!\n");
+	exit(0);
+    }
     assert(ah[i] != NULL);
   }
 
