@@ -79,7 +79,7 @@ void* run_worker(void* arg) {
 #if 1
 	// RoCE
         .is_global = 1,
-        .dlid = 0,
+	.dlid = 0,
 #else
 	.is_global = 0,
 	.dlid = clt_qp[i]->lid,
@@ -94,18 +94,20 @@ void* run_worker(void* arg) {
 	.grh = {
 		.dgid = clt_qp[i]->remote_gid,
 		.sgid_index = SGID_INDEX,
-		.hop_limit = 255,
+		.hop_limit = 1,
 	},
 #endif
     };
 
     ah[i] = ibv_create_ah(cb[cb_i]->pd, &ah_attr);
     if (ah[i] == NULL) {
-    	printf("%s: ah is NULL!\n");
+    	printf("%s: ah is NULL!\n", __func__);
 	exit(0);
     }
     assert(ah[i] != NULL);
   }
+
+  printf("%s:%d All client joined!\n", __func__, __LINE__);
 
   int ws[NUM_CLIENTS] = {0}; /* Per-client window slot */
 
@@ -192,10 +194,10 @@ void* run_worker(void* arg) {
         continue;
       }
 
+      printf("%s: worker %d got one req\n", __func__, poll_i);
+
       /* Convert to a MICA opcode */
       req_buf[req_offset].opcode -= HERD_MICA_OFFSET;
-      // assert(req_buf[req_offset].opcode == MICA_OP_GET ||	/* XXX */
-      //		req_buf[req_offset].opcode == MICA_OP_PUT);
 
       op_ptr_arr[wr_i] = (struct mica_op*)&req_buf[req_offset];
 
@@ -223,12 +225,13 @@ void* run_worker(void* arg) {
       wr[wr_i].sg_list = &sgl[wr_i];
       wr[wr_i].imm_data = wrkr_lid;
 
-      wr[wr_i].send_flags =
-          ((nb_tx[cb_i][ud_qp_i] & UNSIG_BATCH_) == 0) ? IBV_SEND_SIGNALED : 0;
+      wr[wr_i].send_flags = ((nb_tx[cb_i][ud_qp_i] & UNSIG_BATCH_) == 0) ? IBV_SEND_SIGNALED : 0;
+
       if ((nb_tx[cb_i][ud_qp_i] & UNSIG_BATCH_) == UNSIG_BATCH_) {
         hrd_poll_cq(cb[cb_i]->dgram_send_cq[ud_qp_i], 1, &wc);
       }
-      wr[wr_i].send_flags |= IBV_SEND_INLINE;
+
+      //wr[wr_i].send_flags |= IBV_SEND_INLINE;
 
       HRD_MOD_ADD(ws[clt_i], WINDOW_SIZE);
 

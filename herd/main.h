@@ -33,7 +33,7 @@
 #define NUM_CLIENTS 8
 
 /* Performance options */
-#define WINDOW_SIZE 32 /* Outstanding requests kept by each client */
+#define WINDOW_SIZE 2 /* Outstanding requests kept by each client */
 #define NUM_UD_QPS 1   /* Number of UD QPs per port */
 #define USE_POSTLIST 1
 

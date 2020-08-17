@@ -24,7 +24,7 @@
  * HACK!
  * For RoCE UD. Added by Yizhou.
  */
-#define SGID_INDEX 0
+#define SGID_INDEX 1
 
 #define HRD_Q_DEPTH 128 /* Depth of all queues */
 

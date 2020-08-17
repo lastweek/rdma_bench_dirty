@@ -465,10 +465,14 @@ void hrd_connect_qp(struct hrd_ctrl_blk* cb, int n,
   conn_attr.dest_qp_num = remote_qp_attr->qpn;
   conn_attr.rq_psn = HRD_DEFAULT_PSN;
 
-  //conn_attr.ah_attr.is_global = 0;
+#if 1
+  conn_attr.ah_attr.is_global = 0;
+  conn_attr.ah_attr.dlid = remote_qp_attr->lid;
+#else
   conn_attr.ah_attr.is_global = 1;
-  //conn_attr.ah_attr.dlid = remote_qp_attr->lid;
   conn_attr.ah_attr.dlid = 0;
+#endif
+
   conn_attr.ah_attr.sl = 0;
   conn_attr.ah_attr.src_path_bits = 0;
   conn_attr.ah_attr.port_num = cb->dev_port_id; /* Local port! */
