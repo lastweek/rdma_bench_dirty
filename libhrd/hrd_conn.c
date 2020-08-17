@@ -600,6 +600,10 @@ void hrd_publish_conn_qp(struct hrd_ctrl_blk* cb, int n, const char* qp_name) {
 
   qp_attr.remote_gid = ib_get_gid(cb->conn_qp[n]->context, 1);
 
+  fprintf(stderr, "%s GID: Interface id = %lld subnet prefix = %lld\n", __func__,
+      (long long) qp_attr.remote_gid.global.interface_id,
+      (long long) qp_attr.remote_gid.global.subnet_prefix);
+
   hrd_publish(qp_attr.name, &qp_attr, sizeof(struct hrd_qp_attr));
 }
 
@@ -626,6 +630,10 @@ void hrd_publish_dgram_qp(struct hrd_ctrl_blk* cb, int n, const char* qp_name) {
   qp_attr.qpn = cb->dgram_qp[n]->qp_num;
 
   qp_attr.remote_gid = ib_get_gid(cb->conn_qp[n]->context, 1);
+
+  fprintf(stderr, "%s GID: Interface id = %lld subnet prefix = %lld\n", __func__,
+      (long long) qp_attr.remote_gid.global.interface_id,
+      (long long) qp_attr.remote_gid.global.subnet_prefix);
 
   hrd_publish(qp_attr.name, &qp_attr, sizeof(struct hrd_qp_attr));
 }
