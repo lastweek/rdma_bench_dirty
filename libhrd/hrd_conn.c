@@ -478,9 +478,9 @@ void hrd_connect_qp(struct hrd_ctrl_blk* cb, int n,
         (long long) remote_qp_attr->remote_gid.global.interface_id,
         (long long) remote_qp_attr->remote_gid.global.subnet_prefix);
 
-        conn_attr.ah_attr.grh.dgid = remote_qp_attr->remote_gid;
-        conn_attr.ah_attr.grh.sgid_index = SGID_INDEX;
-        conn_attr.ah_attr.grh.hop_limit = 255;
+  conn_attr.ah_attr.grh.dgid = remote_qp_attr->remote_gid;
+  conn_attr.ah_attr.grh.sgid_index = SGID_INDEX;
+  conn_attr.ah_attr.grh.hop_limit = 255;
 #endif
 
   int rtr_flags = IBV_QP_STATE | IBV_QP_AV | IBV_QP_PATH_MTU | IBV_QP_DEST_QPN |
@@ -493,7 +493,7 @@ void hrd_connect_qp(struct hrd_ctrl_blk* cb, int n,
   }
 
   if (ibv_modify_qp(cb->conn_qp[n], &conn_attr, rtr_flags)) {
-    fprintf(stderr, "HRD: Failed to modify QP to RTR\n");
+    fprintf(stderr, "HRD: Failed to modify QP to RTR remote_qp: %s\n", remote_qp_attr->name);
     assert(false);
   }
 

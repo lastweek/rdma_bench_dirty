@@ -145,12 +145,16 @@ void* run_client(void* arg) {
         recv_wr[i].next = (i == WINDOW_SIZE - 1) ? NULL : &recv_wr[i + 1];
       }
 
+      printf("before post_recv\n");
       ret = ibv_post_recv(cb->dgram_qp[0], &recv_wr[0], &bad_recv_wr);
+      printf("after post_recv\n");
       CPE(ret, "ibv_post_recv error", ret);
     }
 
     if (nb_tx % WINDOW_SIZE == 0 && nb_tx > 0) {
+      printf("before poll_cq\n");
       hrd_poll_cq(cb->dgram_recv_cq[0], WINDOW_SIZE, wc);
+      printf("after poll_cq\n");
     }
 
     wn = hrd_fastrand(&seed) % NUM_WORKERS; /* Choose a worker */
@@ -176,7 +180,7 @@ void* run_client(void* arg) {
     if ((nb_tx & UNSIG_BATCH_) == UNSIG_BATCH_) {
       hrd_poll_cq(cb->conn_cq[0], 1, wc);
     }
-    wr.send_flags |= IBV_SEND_INLINE;
+    //wr.send_flags |= IBV_SEND_INLINE;
 
     wr.wr.rdma.remote_addr = mstr_qp->buf_addr + OFFSET(wn, clt_gid, ws[wn]) *
                                                      sizeof(struct mica_op);
