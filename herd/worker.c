@@ -69,8 +69,11 @@ void* run_worker(void* arg) {
       }
     }
 
-    printf("main: Worker %d found client %d of %d clients. Client LID: %d\n",
-           wrkr_lid, i, NUM_CLIENTS, clt_qp[i]->lid);
+    printf("main: Worker %d found client %d of %d clients. Client_QP: %s QPN=%d LID=%d\n",
+           wrkr_lid, i, NUM_CLIENTS, clt_qp[i]->name, clt_qp[i]->qpn, clt_qp[i]->lid);
+    fprintf(stderr, "%s:%d GID: Interface id = %lld subnet prefix = %lld\n", __func__, __LINE__,
+        (long long) clt_qp[i]->remote_gid.global.interface_id, 
+        (long long) clt_qp[i]->remote_gid.global.subnet_prefix);
 
     struct ibv_ah_attr ah_attr = {
 #if 1
@@ -84,10 +87,16 @@ void* run_worker(void* arg) {
 
         .sl = 0,
         .src_path_bits = 0,
-
         /* port_num (> 1): device-local port for responses to this client */
-        //.port_num = local_port_i + 1,
-        .port_num = 1,
+        .port_num = local_port_i + 1,
+
+#if 1
+	.grh = {
+		.dgid = clt_qp[i]->remote_gid,
+		.sgid_index = SGID_INDEX,
+		.hop_limit = 255,
+	},
+#endif
     };
 
     ah[i] = ibv_create_ah(cb[cb_i]->pd, &ah_attr);

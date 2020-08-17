@@ -1,6 +1,8 @@
 #include "hrd.h"
 
-#define SGID_INDEX 1
+#define LINK_MODE_IB 0
+#define LINK_MODE_ROCE 1
+int link_mode = LINK_MODE_ROCE;
 
 union ibv_gid ib_get_gid(struct ibv_context *context, int port_index)
 {
@@ -30,6 +32,7 @@ struct hrd_ctrl_blk* hrd_ctrl_blk_init(
     int num_conn_qps, int use_uc, volatile void* prealloc_conn_buf,
     int conn_buf_size, int conn_buf_shm_key, int num_dgram_qps,
     int dgram_buf_size, int dgram_buf_shm_key) {
+
 #if HRD_CONNECT_IB_ATOMICS == 1
   hrd_red_printf(
       "HRD: Connect-IB atomics enabled. This QP setup has not "
@@ -446,10 +449,6 @@ void hrd_create_conn_qps(struct hrd_ctrl_blk* cb) {
   }
 }
 
-#define LINK_MODE_IB 0
-#define LINK_MODE_ROCE 1
-int link_mode = LINK_MODE_ROCE;
-
 /* Connects @cb's queue pair index @n to remote QP @remote_qp_attr */
 void hrd_connect_qp(struct hrd_ctrl_blk* cb, int n,
                     struct hrd_qp_attr* remote_qp_attr) {
@@ -474,7 +473,7 @@ void hrd_connect_qp(struct hrd_ctrl_blk* cb, int n,
   conn_attr.ah_attr.src_path_bits = 0;
   conn_attr.ah_attr.port_num = cb->dev_port_id; /* Local port! */
 
-  
+#if 1
     fprintf(stderr, "%s:%d GID: Interface id = %lld subnet prefix = %lld\n", __func__, __LINE__,
         (long long) remote_qp_attr->remote_gid.global.interface_id,
         (long long) remote_qp_attr->remote_gid.global.subnet_prefix);
@@ -482,6 +481,7 @@ void hrd_connect_qp(struct hrd_ctrl_blk* cb, int n,
         conn_attr.ah_attr.grh.dgid = remote_qp_attr->remote_gid;
         conn_attr.ah_attr.grh.sgid_index = SGID_INDEX;
         conn_attr.ah_attr.grh.hop_limit = 255;
+#endif
 
   int rtr_flags = IBV_QP_STATE | IBV_QP_AV | IBV_QP_PATH_MTU | IBV_QP_DEST_QPN |
                   IBV_QP_RQ_PSN;
@@ -624,6 +624,8 @@ void hrd_publish_dgram_qp(struct hrd_ctrl_blk* cb, int n, const char* qp_name) {
   qp_attr.name[len] = 0; /* Add the null terminator */
   qp_attr.lid = hrd_get_local_lid(cb->dgram_qp[n]->context, cb->dev_port_id);
   qp_attr.qpn = cb->dgram_qp[n]->qp_num;
+
+  qp_attr.remote_gid = ib_get_gid(cb->conn_qp[n]->context, 1);
 
   hrd_publish(qp_attr.name, &qp_attr, sizeof(struct hrd_qp_attr));
 }

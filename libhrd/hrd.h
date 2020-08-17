@@ -20,6 +20,12 @@
 #include <time.h>
 #include "hrd_sizes.h"
 
+/*
+ * HACK!
+ * For RoCE UD. Added by Yizhou.
+ */
+#define SGID_INDEX 1
+
 #define HRD_Q_DEPTH 128 /* Depth of all queues */
 
 #define HRD_DEFAULT_PSN 3185 /* PSN for all queues */
@@ -35,7 +41,7 @@
  * Small max_inline_data reduces the QP's max WQE size, which reduces the
  * DMA size in doorbell method of WQE fetch.
  */
-#define HRD_MAX_INLINE 60
+#define HRD_MAX_INLINE 256
 
 /* Useful when `x = (x + 1) % N` is done in a loop */
 #define HRD_MOD_ADD(x, N) \
